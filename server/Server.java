@@ -1,5 +1,7 @@
 package server;
 
+import common.*;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -7,6 +9,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 
 public class Server {
     private String address;
@@ -17,7 +20,9 @@ public class Server {
     public  Server(String address, int port) {
         this.address = address;
         this.port = port;
-        this.fileDir =  "C:\\Users\\user\\IdeaProjects\\File Server\\File Server\\task\\src\\server\\data\\";
+        String separator = File.separator;
+        this.fileDir =  "C:"+separator+"Users"+separator+"user"+separator+"IdeaProjects"+separator+"File Server"
+                +separator+"File Server"+separator+"task"+separator+"src"+separator+"server"+separator+"data"+separator;
         this.isServerActive = true;
     }
 
@@ -28,36 +33,34 @@ public class Server {
             try (ServerSocket server = new ServerSocket(port, 50, InetAddress.getByName(address))) {
 //            System.out.println("Server started!");
 
+
                 try (Socket socket = server.accept();
                      DataInputStream input = new DataInputStream(socket.getInputStream());
+                     ObjectInputStream objectInputStream = new ObjectInputStream(input);
                      DataOutputStream output = new DataOutputStream(socket.getOutputStream())) {
 
-                    String msg = input.readUTF();
+                    Message message = (Message) objectInputStream.readObject();
 
-                    if (msg.startsWith("exit")) {
+                    if (message.getHttpMethod() == null) {
                         isServerActive = false;
                     } else {
-                        String[] msgArr = msg.split(" ");
-                        String httpMethod = msgArr[0];
-                        String fileName = msgArr[1];
-                        String text = msg.substring(httpMethod.length() + fileName.length() + 2);
+                        HttpMethods httpMethod = message.getHttpMethod();
                         switch (httpMethod) {
-                            case "1":
-                                getFile(fileName, output);
+                            case GET:
+                                getFile(message, output);
                                 break;
-                            case "2":
-                                putFile(fileName, text, output);
+                            case PUT:
+                                putFile(message, output);
                                 break;
-                            case "3":
-                                deleteFile(fileName, output);
-                                break;
-                            case "exit":
-                                isServerActive = false;
+                            case DELETE:
+                                deleteFile(message, output);
                                 break;
                             default:
                                 System.out.println("UNKNOWN REQUEST FROM CLIENT : " + httpMethod);
                         }
                     }
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -66,37 +69,68 @@ public class Server {
 
     }
 
-
-    private void getFile(String filename, DataOutputStream output) throws IOException {
-        File file = new File(fileDir + filename);
+    private void getFile(Message message, DataOutputStream output) throws IOException {
+        File file = new File(fileDir + message.getFileName());
         if (file.exists()) {
-            Path path = Paths.get(fileDir + filename);
-            String content = Files.readString(path);
-            output.writeUTF("200 " + content);
+//            Path path = Paths.get(fileDir + message.getFileName());
+
+            String filePath = fileDir + message.getFileName();
+            try {
+                byte[] fileContent = Files.readAllBytes(Paths.get(filePath));
+
+                Message response = new Message(null, HttpStatusCodes.OK, message.getFileName(), fileContent);
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+                objectOutputStream.writeObject(response);
+                objectOutputStream.flush();
+                byte[] responseByteArray = byteArrayOutputStream.toByteArray();
+
+                output.write(responseByteArray);
+
+                objectOutputStream.close();
+                byteArrayOutputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } else {
-            output.writeUTF("404");
+            sendMessageOnlyStatus(HttpStatusCodes.NOT_FOUND, output);
         }
     }
 
-    private void putFile(String filename, String text, DataOutputStream output) throws IOException {
-        File file = new File(fileDir + filename);
+    private void putFile(Message message, DataOutputStream output) throws IOException {
+        File file = new File(fileDir + message.getFileName());
         if (file.createNewFile()) {
-            BufferedWriter out = new BufferedWriter(new FileWriter(fileDir + filename));
-            out.write(text);
-            out.close();
-            output.writeUTF("200");
+            try (FileOutputStream fileOutputStream = new FileOutputStream(fileDir + message.getFileName())) {
+                fileOutputStream.write(message.getData());
+                sendMessageOnlyStatus(HttpStatusCodes.OK, output);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } else {
-            output.writeUTF("403");
+            sendMessageOnlyStatus(HttpStatusCodes.FILE_ALREADY_EXISTS, output);
         }
     }
 
-    private void deleteFile(String fileName, DataOutputStream output) throws IOException {
-        File file = new File(fileDir + fileName);
+    private void deleteFile(Message message, DataOutputStream output) throws IOException {
+        File file = new File(fileDir + message.getFileName());
         if (file.delete()) {
-            output.writeUTF("200");
+            sendMessageOnlyStatus(HttpStatusCodes.OK, output);
         } else {
-            output.writeUTF("404");
+            sendMessageOnlyStatus(HttpStatusCodes.NOT_FOUND, output);
         }
+    }
+
+    private void sendMessageOnlyStatus(HttpStatusCodes code, DataOutputStream output) throws IOException {
+        Message message = new Message(null, code, null, null);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+        objectOutputStream.writeObject(message);
+        objectOutputStream.flush();
+        byte[] messageByteArray = byteArrayOutputStream.toByteArray();
+        output.write(messageByteArray);
+
+        objectOutputStream.close();
+        byteArrayOutputStream.close();
     }
 
 }

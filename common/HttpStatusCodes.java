@@ -3,7 +3,8 @@ package common;
 public enum HttpStatusCodes {
 
     OK(200),
-    NOT_FOUND(404);
+    NOT_FOUND(404),
+    FILE_ALREADY_EXISTS(403);
 
     int code;
 
