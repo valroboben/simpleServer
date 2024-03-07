@@ -37,16 +37,11 @@ public class Client {
     }
 
 
-    static void menu(boolean isClientActive, DataInputStream input, DataOutputStream output) throws IOException, ClassNotFoundException {
-
-//        if (!isClientActive) {
-//            System.exit(0); // МОЖЕТ ВОТ НЕ НУЖНО ЭТОГО ?????!!!
-//        }
+    void menu(boolean isClientActive, DataInputStream input, DataOutputStream output) throws IOException, ClassNotFoundException {
 
         System.out.println("Enter action (1 - get a file, 2 - create a file, 3 - delete a file):");
-        String httpMethod = Main.scanner.nextLine();
-
-        switch (httpMethod) {
+        String action = Main.scanner.nextLine();
+        switch (action) {
             case "exit":
                 exit(input, output, isClientActive);
                 break;
@@ -65,42 +60,20 @@ public class Client {
     }
 
 
-    static void exit(DataInputStream input, DataOutputStream output, boolean isClientActive) throws IOException {
+    void exit(DataInputStream input, DataOutputStream output, boolean isClientActive) throws IOException {
 
-        Message request = new Message(null, null, null, null);
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-        objectOutputStream.writeObject(request);
-        objectOutputStream.flush();
-        byte [] messageByteArray = byteArrayOutputStream.toByteArray();
-
-        output.write(messageByteArray);
-
-        objectOutputStream.close();     // закрываем в обратном порядке
-        byteArrayOutputStream.close();
-
+        output.write(messageToByteArrayForSending(new Message(null, null, null, null)));
         System.out.println("The request was sent.");
         isClientActive = false;
     }
 
-    static void putRequest(DataInputStream input, DataOutputStream output) throws IOException, ClassNotFoundException {
+    void putRequest(DataInputStream input, DataOutputStream output) throws IOException, ClassNotFoundException {
         System.out.println("Enter filename:");
         String fileName = Main.scanner.nextLine();
         System.out.println("Enter file content:");
         String text = Main.scanner.nextLine();
 
-        Message request = new Message(HttpMethods.PUT, null, fileName, text.getBytes(StandardCharsets.UTF_8));
-
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-        objectOutputStream.writeObject(request);
-        objectOutputStream.flush();
-        byte[] requestByteArray = byteArrayOutputStream.toByteArray();
-
-        output.write(requestByteArray);
-
-        objectOutputStream.close();
-        byteArrayOutputStream.close();
+        output.write(messageToByteArrayForSending(new Message(HttpMethods.PUT, null, fileName, text.getBytes(StandardCharsets.UTF_8))));
         System.out.println("The request was sent.");
 
         ObjectInputStream objectInputStream = new ObjectInputStream(input);
@@ -110,21 +83,11 @@ public class Client {
                 "The response says that creating the file was forbidden!");
     }
 
-    static void deleteRequest(DataInputStream input, DataOutputStream output) throws IOException, ClassNotFoundException {
+    void deleteRequest(DataInputStream input, DataOutputStream output) throws IOException, ClassNotFoundException {
         System.out.println("Enter filename:");
         String fileName = Main.scanner.nextLine();
 
-        Message request = new Message(HttpMethods.DELETE, null, fileName, null);
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-        objectOutputStream.writeObject(request);
-        objectOutputStream.flush();
-        byte [] messageByteArray = byteArrayOutputStream.toByteArray();
-
-        output.write(messageByteArray); //         output.writeUTF("3 " + fileName + " please delete this file ))))");
-
-        objectOutputStream.close();
-        byteArrayOutputStream.close();
+        output.write(messageToByteArrayForSending(new Message(HttpMethods.DELETE, null, fileName, null)));
 
         System.out.println("The request was sent.");
         ObjectInputStream objectInputStream = new ObjectInputStream(input);
@@ -134,22 +97,11 @@ public class Client {
                 "The response says that the file was not found!");
     }
 
-    static void getRequest(DataInputStream input, DataOutputStream output) throws IOException, ClassNotFoundException {
+    void getRequest(DataInputStream input, DataOutputStream output) throws IOException, ClassNotFoundException {
         System.out.println("Enter filename:");
         String fileName = Main.scanner.nextLine();
 
-        Message request = new Message(HttpMethods.GET, null, fileName, null);
-
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-        objectOutputStream.writeObject(request);
-        objectOutputStream.flush();
-        byte[] requestByteArray = byteArrayOutputStream.toByteArray();
-
-        output.write(requestByteArray);
-
-        objectOutputStream.close();
-        byteArrayOutputStream.close();
+        output.write(messageToByteArrayForSending(new Message(HttpMethods.GET, null, fileName, null)));
 
         System.out.println("The request was sent.");
 
@@ -164,10 +116,15 @@ public class Client {
         }
     }
 
-
-    /* TODO: заменить Message request на отдельный метод, который возвращает сразу byte[]
-        то есть byte[] toBeSent = getByteArrayOfMessage(message); */
-
-    // TODO: получение ответа сделать через отдельный метод "showResponse()" ?????
+    private byte[] messageToByteArrayForSending(Message message) throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+        objectOutputStream.writeObject(message);
+        objectOutputStream.flush();
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
+        objectOutputStream.close();
+        byteArrayOutputStream.close();
+        return byteArray;
+    }
 
 }

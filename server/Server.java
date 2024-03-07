@@ -17,12 +17,12 @@ public class Server {
     String fileDir;
     private boolean isServerActive;
 
-    public  Server(String address, int port) {
+    public Server(String address, int port) {
         this.address = address;
         this.port = port;
         String separator = File.separator;
-        this.fileDir =  "C:"+separator+"Users"+separator+"user"+separator+"IdeaProjects"+separator+"File Server"
-                +separator+"File Server"+separator+"task"+separator+"src"+separator+"server"+separator+"data"+separator;
+        this.fileDir = "C:" + separator + "Users" + separator + "user" + separator + "IdeaProjects" + separator + "File Server"
+                + separator + "File Server" + separator + "task" + separator + "src" + separator + "server" + separator + "data" + separator;
         this.isServerActive = true;
     }
 
@@ -32,8 +32,6 @@ public class Server {
 
             try (ServerSocket server = new ServerSocket(port, 50, InetAddress.getByName(address))) {
 //            System.out.println("Server started!");
-
-
                 try (Socket socket = server.accept();
                      DataInputStream input = new DataInputStream(socket.getInputStream());
                      ObjectInputStream objectInputStream = new ObjectInputStream(input);
@@ -78,17 +76,8 @@ public class Server {
             try {
                 byte[] fileContent = Files.readAllBytes(Paths.get(filePath));
 
-                Message response = new Message(null, HttpStatusCodes.OK, message.getFileName(), fileContent);
-                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-                objectOutputStream.writeObject(response);
-                objectOutputStream.flush();
-                byte[] responseByteArray = byteArrayOutputStream.toByteArray();
+                output.write(messageToByteArrayForSending(new Message(null, HttpStatusCodes.OK, message.getFileName(), fileContent)));
 
-                output.write(responseByteArray);
-
-                objectOutputStream.close();
-                byteArrayOutputStream.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -131,6 +120,17 @@ public class Server {
 
         objectOutputStream.close();
         byteArrayOutputStream.close();
+    }
+
+    private byte[] messageToByteArrayForSending(Message message) throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+        objectOutputStream.writeObject(message);
+        objectOutputStream.flush();
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
+        objectOutputStream.close();
+        byteArrayOutputStream.close();
+        return byteArray;
     }
 
 }
