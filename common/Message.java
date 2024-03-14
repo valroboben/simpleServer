@@ -8,6 +8,7 @@ public class Message implements Serializable {
     private HttpStatusCodes httpStatusCode;
     private String fileName;
     private byte[] data;
+    private int ID;
 
     public Message(HttpMethods httpMethod, HttpStatusCodes httpStatusCode, String fileName, byte[] data) {
         this.httpMethod = httpMethod;
@@ -47,4 +48,13 @@ public class Message implements Serializable {
     public void setData(byte[] data) {
         this.data = data;
     }
+
+    public int getID() {
+        return ID;
+    }
+
+    public void setID(int ID) {
+        this.ID = ID;
+    }
+
 }
