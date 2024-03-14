@@ -64,7 +64,7 @@ public class Client {
 
         output.write(messageToByteArrayForSending(new Message(null, null, null, null)));
         System.out.println("The request was sent.");
-        isClientActive = false;
+        this.isClientActive = false;
     }
 
     void putRequest(DataInputStream input, DataOutputStream output) throws IOException, ClassNotFoundException {
