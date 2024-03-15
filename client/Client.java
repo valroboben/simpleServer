@@ -117,7 +117,15 @@ public class Client {
         output.write(messageToByteArrayForSending(message));
         System.out.println("The request was sent.");
 
-        ObjectInputStream objectInputStream = new ObjectInputStream(input);
+
+        try {
+            TimeUnit.MILLISECONDS.sleep(333);
+        } catch (InterruptedException ignored) {
+        }
+
+
+
+        ObjectInputStream objectInputStream = new ObjectInputStream(input); // TODO тут ошибка
         Message response = (Message) objectInputStream.readObject();
 
         System.out.println(response.getHttpStatusCode() == HttpStatusCodes.OK ? "The response says that the file was successfully deleted!" :
@@ -169,16 +177,18 @@ public class Client {
 
     private byte[] getByteArrayFromFile(String fileName) {
 
-        String absoluteFilePath = fileDir + fileName;
+        String filePath = "C:\\Users\\user\\IdeaProjects\\File Server\\File Server\\task\\src\\client\\data\\" + fileName;
         try {
-            Path path = Paths.get(absoluteFilePath);
-            byte[] dataFromFile = Files.readAllBytes(path);
+            // сюда доходит
+            byte[] dataFromFile = Files.readAllBytes(Paths.get(filePath));
+            // сюда НЕ доходит
             return dataFromFile;
         } catch (IOException e) {
+            // сюда попадает...
             e.printStackTrace();
         }
 
-        System.out.println("polni pizdez !"); // TODO remove this line !
+        System.out.println("polni pizdez !"); // TODO remove this line ! // ну и вот это получаем...
         return null;
     }
 

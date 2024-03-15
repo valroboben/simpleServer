@@ -135,10 +135,16 @@ public class Server {
     }
 
     private void deleteFile(Message message, DataOutputStream output) throws IOException {
+
+        // @TODO он удаляет файлы по имени, но не удаляет файлы по id даже вручную !!!
+
         String fileName;
         String absolutePathToFile;
-        if (message.getFileName().equals("")) {
-            fileName = generateFileName();
+
+        if (message.getFileName() == null) {
+
+            fileName = filesDatabase.getNameByID(message.getID());
+            System.out.println(fileName);
         } else {
             fileName = message.getFileName();
         }
@@ -196,7 +202,6 @@ public class Server {
             int randomIndex = random.nextInt(characters.length());
             stringBuilder.append(characters.charAt(randomIndex));
         }
-        stringBuilder.append(".sav");
         return stringBuilder.toString();
     }
 
